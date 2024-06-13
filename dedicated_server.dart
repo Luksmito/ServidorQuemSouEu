@@ -307,6 +307,10 @@ class GameServer {
     bool playerHost = false;
     Lobby theLobby;
     if (playerData != null) {
+      if (!rooms.containsKey(playerData.lobbyName)) {
+        socket.destroy();
+        return;
+      }
       String playerNick = "";
       theLobby = rooms.update(playerData.lobbyName, (lobby) {
         lobby.playersList.removeWhere((player) {
@@ -318,7 +322,7 @@ class GameServer {
           return found;
         });
         lobby.playersConnection.removeWhere(
-            (conexao) => conexao.remoteAddress == socket.remoteAddress);
+            (conexao) => conexao == socket);
         return lobby;
       });
       sendCallbackPlayerDisconnected(theLobby, playerNick, playerHost);
