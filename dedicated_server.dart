@@ -74,6 +74,7 @@ class GameServer {
         break;
       case PacketType.gameStateChange:
         setGameState(packet);
+        break;
       case PacketType.setToGuess:
         handleSetToGuess(packet, socket);
         break;
@@ -81,10 +82,12 @@ class GameServer {
         for (var connection in rooms[packet.lobbyName]!.playersConnection) {
           if (connection != socket) connection.write(packet);
         }
+        break;
       case PacketType.chatMessage:
         for (var connection in rooms[packet.lobbyName]!.playersConnection) {
           connection.write(packet.toString());
         }
+        break;
       case PacketType.restartGame:
         handleRestartGame(packet.lobbyName!);
         for (var connection in rooms[packet.lobbyName]!.playersConnection) {
@@ -288,11 +291,13 @@ class GameServer {
     }
   }
 
-  void closeLobby(String lobbyName) {
+  void closeLobby(String lobbyName, Socket socket) {
     final lobby = rooms[lobbyName];
     if (lobby != null) {
       for (var connection in lobby.playersConnection) {
-        connection.destroy();
+        if (connection != socket) {
+          connection.destroy();
+        }
       }
       rooms.removeWhere((key, value) => key == lobbyName);
     }
@@ -321,8 +326,9 @@ class GameServer {
         return lobby;
       });
       sendCallbackPlayerDisconnected(theLobby, playerNick, playerHost);
+      onlinePlayerData.removeWhere((key, value) => key == socket.remoteAddress.address);
       if (theLobby.playersList.isEmpty) {
-        closeLobby(theLobby.name);
+        closeLobby(theLobby.name, socket);
         return;
       }
     }

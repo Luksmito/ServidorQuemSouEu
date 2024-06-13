@@ -1,0 +1,14 @@
+{
+  "configVersion": 2,
+  "packages": [
+    {
+      "name": "serverQuemSouEu",
+      "rootUri": "../",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    }
+  ],
+  "generated": "2024-06-13T18:34:04.294124Z",
+  "generator": "pub",
+  "generatorVersion": "3.3.0"
+}
