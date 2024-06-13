@@ -302,8 +302,8 @@ class GameServer {
 
   void _handleDisconnect(socket) {
     print('Online players: $onlinePlayerData');
-    OnlinePlayerData? playerData =
-        onlinePlayerData["${socket.remoteAddress.address}:${socket.remotePort}"];
+    OnlinePlayerData? playerData = onlinePlayerData[
+        "${socket.remoteAddress.address}:${socket.remotePort}"];
     bool playerHost = false;
     Lobby theLobby;
     if (playerData != null) {
@@ -314,7 +314,10 @@ class GameServer {
       String playerNick = "";
       theLobby = rooms.update(playerData.lobbyName, (lobby) {
         lobby.playersList.removeWhere((player) {
-          final found = player.myIP.address == socket.remoteAddress.address && socket.remotePort == player.port;
+          print(
+              "${player.nick}\nplayer Address: ${player.myIP.address}\nsocket Address: ${socket.remoteAddress.address}\nsocket port: ${socket.remotePort}\nplayer Address: ${player.port}\n");
+          final found = player.myIP.address == socket.remoteAddress.address &&
+              socket.remotePort == player.port;
           if (found) {
             playerNick = player.nick;
             playerHost = player.isHost;
@@ -323,13 +326,15 @@ class GameServer {
 
           return found;
         });
-        lobby.playersConnection.removeWhere(
-            (conexao) => conexao.remoteAddress.address == socket.remoteAddress.address && conexao.remotePort == socket.remotePort);
-        
+        lobby.playersConnection.removeWhere((conexao) =>
+            conexao.remoteAddress.address == socket.remoteAddress.address &&
+            conexao.remotePort == socket.remotePort);
+
         return lobby;
       });
       sendCallbackPlayerDisconnected(theLobby, playerNick, playerHost);
-      onlinePlayerData.removeWhere((key, value) => key == "${socket.remoteAddress.address}:${socket.remotePort}");
+      onlinePlayerData.removeWhere((key, value) =>
+          key == "${socket.remoteAddress.address}:${socket.remotePort}");
       if (theLobby.playersList.isEmpty) {
         closeLobby(theLobby.name, socket);
         return;
