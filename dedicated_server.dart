@@ -322,7 +322,7 @@ class GameServer {
           return found;
         });
         lobby.playersConnection.removeWhere(
-            (conexao) => conexao == socket);
+            (conexao) => conexao.remoteAddress.address == socket.remoteAddress.address && conexao.remotePort == socket.remotePort);
         return lobby;
       });
       sendCallbackPlayerDisconnected(theLobby, playerNick, playerHost);
