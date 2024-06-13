@@ -2,7 +2,6 @@
 import 'player.dart';
 
 class Host extends Player {
-  int? port;
  
   Host(super.nick, super.myIP, super.port);
 

@@ -315,7 +315,7 @@ class GameServer {
       theLobby = rooms.update(playerData.lobbyName, (lobby) {
         lobby.playersList.removeWhere((player) {
           print(
-              "${player.nick}\nplayer Address: ${player.myIP.address}\nsocket Address: ${socket.remoteAddress.address}\nsocket port: ${socket.remotePort}\nplayer Address: ${player.port}\n");
+              "${player.nick}\nplayer Address: ${player.myIP.address}\nsocket Address: ${socket.remoteAddress.address}\nsocket port: ${socket.remotePort}\nplayer port: ${player.port}\n");
           final found = player.myIP.address == socket.remoteAddress.address &&
               socket.remotePort == player.port;
           if (found) {
