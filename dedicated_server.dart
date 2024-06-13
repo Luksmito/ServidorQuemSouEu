@@ -319,10 +319,13 @@ class GameServer {
             playerNick = player.nick;
             playerHost = player.isHost;
           }
+          print("player $playerNick removido");
+
           return found;
         });
         lobby.playersConnection.removeWhere(
             (conexao) => conexao.remoteAddress.address == socket.remoteAddress.address && conexao.remotePort == socket.remotePort);
+        
         return lobby;
       });
       sendCallbackPlayerDisconnected(theLobby, playerNick, playerHost);
