@@ -1,9 +1,9 @@
 
 import 'dart:io';
 
-import 'package:quem_sou_eu/data/game_data/game_packet.dart';
-import 'package:quem_sou_eu/data/game_data/game_states.dart';
-import 'package:quem_sou_eu/data/game_data/packet_types.dart';
+import 'game_packet.dart';
+import 'game_states.dart';
+import 'packet_types.dart';
 
 class Player {
   final String nick;

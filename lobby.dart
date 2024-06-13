@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:quem_sou_eu/data/game_data/game_states.dart';
-import 'package:quem_sou_eu/data/player/player.dart';
+import 'game_states.dart';
+import 'player.dart';
 
 class Lobby {
   final int id;

@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:quem_sou_eu/data/game_data/game_packet.dart';
-import 'package:quem_sou_eu/data/game_data/game_states.dart';
-import 'package:quem_sou_eu/data/game_data/packet_types.dart';
-import 'package:quem_sou_eu/data/player/host.dart';
-import 'package:quem_sou_eu/data/player/player.dart';
+import 'game_packet.dart';
+import 'game_states.dart';
+import 'packet_types.dart';
+import 'host.dart';
+import 'player.dart';
 
 import 'lobby.dart';
 import 'online_player_data.dart';

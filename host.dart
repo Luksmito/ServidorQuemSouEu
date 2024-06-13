@@ -1,5 +1,5 @@
 
-import 'package:quem_sou_eu/data/player/player.dart';
+import 'player.dart';
 
 class Host extends Player {
   Host(super.nick, super.myIP);
