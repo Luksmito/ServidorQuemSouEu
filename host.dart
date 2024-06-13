@@ -2,7 +2,10 @@
 import 'player.dart';
 
 class Host extends Player {
-  Host(super.nick, super.myIP);
+  int? port;
+ 
+  Host(super.nick, super.myIP, super.port);
+
 
   List<String> ips = [];
 

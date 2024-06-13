@@ -10,9 +10,9 @@ class Player {
   final InternetAddress myIP;
   String? image;
   String? toGuess; 
+  int? port;
 
-
-  Player(this.nick, this.myIP);
+  Player(this.nick, this.myIP, this.port);
 
   set setImage(String image) => this.image = image;
   set setToGuess(String toGuess) => this.toGuess = toGuess;

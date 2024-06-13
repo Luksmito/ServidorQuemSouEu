@@ -223,8 +223,8 @@ class GameServer {
         playerIP: InternetAddress.anyIPv4);
     if (lobby != null) {
       lobby.playersList.add(packet.fromHost
-          ? Host(packet.playerNick, socket.remoteAddress)
-          : Player(packet.playerNick, socket.remoteAddress));
+          ? Host(packet.playerNick, socket.remoteAddress, socket.remotePort)
+          : Player(packet.playerNick, socket.remoteAddress, socket.remotePort));
       onlinePlayerData.addAll({
         "${socket.remoteAddress.address}:${socket.remotePort}":
             OnlinePlayerData(lobby.name, packet.fromHost)
@@ -314,7 +314,7 @@ class GameServer {
       String playerNick = "";
       theLobby = rooms.update(playerData.lobbyName, (lobby) {
         lobby.playersList.removeWhere((player) {
-          final found = player.myIP.address == socket.remoteAddress.address;
+          final found = player.myIP.address == socket.remoteAddress.address && socket.remotePort == player.port;
           if (found) {
             playerNick = player.nick;
             playerHost = player.isHost;
