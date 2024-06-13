@@ -33,9 +33,6 @@ class GameServer {
     socket.listen(
       (List<int> data) {
         final message = utf8.decode(data);
-        if (debug) {
-          print("MEssage $message");
-        }
         _handleMessage(socket, message);
       },
       onDone: () {
@@ -304,12 +301,11 @@ class GameServer {
   }
 
   void _handleDisconnect(socket) {
-    print(onlinePlayerData);
+    print('Online players: $onlinePlayerData');
     OnlinePlayerData? playerData =
         onlinePlayerData["${socket.remoteAddress.address}:${socket.remotePort}"];
     bool playerHost = false;
     Lobby theLobby;
-    print("${socket.remoteAddress.address}");
     if (playerData != null) {
       String playerNick = "";
       theLobby = rooms.update(playerData.lobbyName, (lobby) {
