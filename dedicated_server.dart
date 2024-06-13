@@ -229,7 +229,7 @@ class GameServer {
           ? Host(packet.playerNick, socket.remoteAddress)
           : Player(packet.playerNick, socket.remoteAddress));
       onlinePlayerData.addAll({
-        socket.remoteAddress.address:
+        "${socket.remoteAddress.address}:${socket.remotePort}":
             OnlinePlayerData(lobby.name, packet.fromHost)
       });
       responsePacket.response = "SUCCESS";
@@ -306,7 +306,7 @@ class GameServer {
   void _handleDisconnect(socket) {
     print(onlinePlayerData);
     OnlinePlayerData? playerData =
-        onlinePlayerData[socket.remoteAddress.address];
+        onlinePlayerData["${socket.remoteAddress.address}:${socket.remotePort}"];
     bool playerHost = false;
     Lobby theLobby;
     print("${socket.remoteAddress.address}");
@@ -326,7 +326,7 @@ class GameServer {
         return lobby;
       });
       sendCallbackPlayerDisconnected(theLobby, playerNick, playerHost);
-      onlinePlayerData.removeWhere((key, value) => key == socket.remoteAddress.address);
+      onlinePlayerData.removeWhere((key, value) => key == "${socket.remoteAddress.address}:${socket.remotePort}");
       if (theLobby.playersList.isEmpty) {
         closeLobby(theLobby.name, socket);
         return;
