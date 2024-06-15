@@ -9,7 +9,7 @@ class Lobby {
   final String theme;
   final bool hasPassword;
   GameState gameState;
-  List<Socket> playersConnection;
+  List<SecureSocket> playersConnection;
   List<Player> playersList;
   String? password;
   

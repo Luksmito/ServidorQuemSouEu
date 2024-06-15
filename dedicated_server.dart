@@ -22,12 +22,25 @@ class GameServer {
   GameServer(this.port);
 
   Future<void> start() async {
-    _server = await ServerSocket.bind('0.0.0.0', port);
-    print('Servidor iniciado na porta $port');
-    _server!.listen(_handleConnection);
+    var context = SecurityContext()
+    ..useCertificateChain('./certificate.pem')
+    ..usePrivateKey('./private_key.pem', password: "bushido");
+
+  // Cria um servidor seguro usando TLS
+  var server = await SecureServerSocket.bind(
+    InternetAddress.anyIPv4,
+    55656,
+    context,
+  );
+
+  print('Servidor seguro rodando em ${server.address.address}:${server.port}');
+
+  await for (var client in server) {
+    _handleConnection(client);
+  }
   }
 
-  void _handleConnection(Socket socket) {
+  void _handleConnection(SecureSocket socket) {
     print(
         'Nova conexão de ${socket.remoteAddress.address}:${socket.remotePort}');
     socket.listen(
@@ -45,7 +58,7 @@ class GameServer {
   }
 
   void sendPacketToAllPlayers(
-      GamePacket packet, List<Socket> playersConnection) {
+      GamePacket packet, List<SecureSocket> playersConnection) {
     for (var connection in playersConnection) {
       connection.write(packet);
     }
@@ -107,13 +120,17 @@ class GameServer {
     });
   }
 
-  void handleSetToGuess(GamePacket packet, socket) {
-    rooms.update(packet.lobbyName!, (lobby) {
-      for (int i = 0; i < lobby.playersConnection.length; i++) {
-        if (socket != lobby.playersConnection[i]) {
-          lobby.playersConnection[i].write(packet);
-        }
+  void retransmitPacket(GamePacket packet, Lobby lobby, SecureSocket socketSource) {
+    for (int i = 0; i < lobby.playersConnection.length; i++) {
+      if (socketSource != lobby.playersConnection[i]) {
+        lobby.playersConnection[i].write(packet);
       }
+    }
+  }
+
+  void handleSetToGuess(GamePacket packet, SecureSocket socket) {
+    rooms.update(packet.lobbyName!, (lobby) {
+      retransmitPacket(packet, lobby, socket);
       final indexPlayer = lobby.playersList
           .indexWhere((player) => player.nick == packet.playerNick);
       lobby.playersList[indexPlayer].setToGuess = packet.toGuess!;
@@ -121,7 +138,6 @@ class GameServer {
         lobby.playersList[indexPlayer].setImage = packet.image!;
       }
       if (isAllPlayersToGuessSetted(lobby.playersList)) {
-        print("All players setted to guess");
         GamePacket sendPacket = GamePacket(
             fromHost: true,
             playerNick: "HOSTSERVER",
@@ -288,7 +304,7 @@ class GameServer {
     }
   }
 
-  void closeLobby(String lobbyName, Socket socket) {
+  void closeLobby(String lobbyName, SecureSocket socket) {
     final lobby = rooms[lobbyName];
     if (lobby != null) {
       for (var connection in lobby.playersConnection) {
