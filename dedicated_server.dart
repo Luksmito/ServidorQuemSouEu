@@ -238,6 +238,9 @@ class GameServer {
         type: PacketType.sendPlayersAlreadyInLobby,
         playerIP: InternetAddress.anyIPv4);
     if (lobby != null) {
+      responsePacket.playersAlreadyInLobby = List<Map<String, String>>.generate(
+          lobby.playersList.length,
+          (index) => {"nick": lobby.playersList[index].nick, "ip": "0.0.0.0"});
       lobby.playersList.add(packet.fromHost
           ? Host(packet.playerNick, socket.remoteAddress, socket.remotePort)
           : Player(packet.playerNick, socket.remoteAddress, socket.remotePort));
@@ -249,9 +252,6 @@ class GameServer {
       for (var player in lobby.playersList) {
         print("Nicks: ${player.nick}");
       }
-      responsePacket.playersAlreadyInLobby = List.generate(
-          lobby.playersList.length,
-          (index) => {"nick": lobby.playersList[index].nick, "ip": "0.0.0.0"});
       for (var connection in lobby.playersConnection) {
         connection.write(packet);
       }
