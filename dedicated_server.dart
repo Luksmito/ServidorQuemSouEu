@@ -23,21 +23,22 @@ class GameServer {
 
   Future<void> start() async {
     var context = SecurityContext()
-    ..useCertificateChain('./certificate.pem')
-    ..usePrivateKey('./private_key.pem', password: "bushido");
+      ..useCertificateChain('./certificate.pem')
+      ..usePrivateKey('./private_key.pem', password: "bushido");
 
-  // Cria um servidor seguro usando TLS
-  var server = await SecureServerSocket.bind(
-    InternetAddress.anyIPv4,
-    55656,
-    context,
-  );
+    // Cria um servidor seguro usando TLS
+    var server = await SecureServerSocket.bind(
+      InternetAddress.anyIPv4,
+      55656,
+      context,
+    );
 
-  print('Servidor seguro rodando em ${server.address.address}:${server.port}');
+    print(
+        'Servidor seguro rodando em ${server.address.address}:${server.port}');
 
-  await for (var client in server) {
-    _handleConnection(client);
-  }
+    await for (var client in server) {
+      _handleConnection(client);
+    }
   }
 
   void _handleConnection(SecureSocket socket) {
@@ -120,7 +121,8 @@ class GameServer {
     });
   }
 
-  void retransmitPacket(GamePacket packet, Lobby lobby, SecureSocket socketSource) {
+  void retransmitPacket(
+      GamePacket packet, Lobby lobby, SecureSocket socketSource) {
     for (int i = 0; i < lobby.playersConnection.length; i++) {
       if (socketSource != lobby.playersConnection[i]) {
         lobby.playersConnection[i].write(packet);
@@ -286,6 +288,7 @@ class GameServer {
   void sendCallbackPlayerDisconnected(
       Lobby lobby, String playerNick, bool playerHost) {
     GamePacket packet;
+    print("sending callback for other players");
     if (playerHost) {
       packet = GamePacket(
           fromHost: true,
@@ -302,18 +305,24 @@ class GameServer {
     for (var socket in lobby.playersConnection) {
       socket.write(packet.toString());
     }
+    print("callback sended");
   }
 
   void closeLobby(String lobbyName, SecureSocket socket) {
     final lobby = rooms[lobbyName];
     if (lobby != null) {
       for (var connection in lobby.playersConnection) {
-        if (connection != socket) {
+        if (!equalSockets(connection, socket)) {
           connection.destroy();
         }
       }
       rooms.removeWhere((key, value) => key == lobbyName);
     }
+  }
+
+  bool equalSockets(socket1, socket2) {
+    return socket1.remoteAddress.address == socket2.remoteAddress.address &&
+        socket1.remotePort == socket2.remotePort;
   }
 
   void _handleDisconnect(socket) {
@@ -343,13 +352,9 @@ class GameServer {
           return found;
         });
 
-        try {
-          lobby.playersConnection.removeWhere((conexao) =>
-          conexao.remoteAddress.address == socket.remoteAddress.address &&
-          conexao.remotePort == socket.remotePort);
-        } catch (e) {
-          print("Erro");
-        }
+        lobby.playersConnection.removeWhere((conexao) =>
+            equalSockets(conexao, socket));
+
         return lobby;
       });
       sendCallbackPlayerDisconnected(theLobby, playerNick, playerHost);
