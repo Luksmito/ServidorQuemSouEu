@@ -342,10 +342,14 @@ class GameServer {
 
           return found;
         });
-        lobby.playersConnection.removeWhere((conexao) =>
-            conexao.remoteAddress.address == socket.remoteAddress.address &&
-            conexao.remotePort == socket.remotePort);
 
+        try {
+          lobby.playersConnection.removeWhere((conexao) =>
+          conexao.remoteAddress.address == socket.remoteAddress.address &&
+          conexao.remotePort == socket.remotePort);
+        } catch (e) {
+          print("Erro");
+        }
         return lobby;
       });
       sendCallbackPlayerDisconnected(theLobby, playerNick, playerHost);
