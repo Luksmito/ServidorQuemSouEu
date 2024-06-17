@@ -14,7 +14,6 @@ const debug = true;
 
 class GameServer {
   final int port;
-  ServerSocket? _server;
   Map<String, Lobby> rooms = {};
   int id = 0;
   Map<String, OnlinePlayerData> onlinePlayerData = {};
@@ -32,9 +31,10 @@ class GameServer {
       55656,
       context,
     );
-
+    
     print(
         'Servidor seguro rodando em ${server.address.address}:${server.port}');
+
     await for (var client in server) {
       _handleConnection(client);
     }
@@ -312,6 +312,7 @@ class GameServer {
     if (lobby != null) {
       rooms.removeWhere((key, value) => key == lobbyName);
     }
+    socket.close();
   }
 
   bool equalSockets(socket1, socket2) {
@@ -361,7 +362,7 @@ class GameServer {
       }
     }
     print("Destruindo socket");
-    socket.destroy();
+    socket.close();
     if (debug) print("DISCONNECTED");
   }
 
