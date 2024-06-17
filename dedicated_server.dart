@@ -319,6 +319,7 @@ class GameServer {
           connection.destroy();
         }
       }
+      print("Removendo sala");
       rooms.removeWhere((key, value) => key == lobbyName);
     }
   }
