@@ -320,7 +320,7 @@ class GameServer {
         socket1.remotePort == socket2.remotePort;
   }
 
-  void _handleDisconnect(socket) {
+  void _handleDisconnect(SecureSocket socket) {
     print('Online players: $onlinePlayerData');
     OnlinePlayerData? playerData = onlinePlayerData[
         "${socket.remoteAddress.address}:${socket.remotePort}"];
@@ -328,7 +328,7 @@ class GameServer {
     Lobby theLobby;
     if (playerData != null) {
       if (!rooms.containsKey(playerData.lobbyName)) {
-        socket.destroy();
+        socket.close();
         return;
       }
       String playerNick = "";
