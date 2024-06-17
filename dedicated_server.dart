@@ -311,6 +311,7 @@ class GameServer {
   void closeLobby(String lobbyName, SecureSocket socket) {
     final lobby = rooms[lobbyName];
     if (lobby != null) {
+      print("tamanho: ${lobby.playersConnection.length}");
       for (var connection in lobby.playersConnection) {
         print("Connection: $connection");
         if (!equalSockets(connection, socket)) {
