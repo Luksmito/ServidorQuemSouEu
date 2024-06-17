@@ -312,7 +312,9 @@ class GameServer {
     final lobby = rooms[lobbyName];
     if (lobby != null) {
       for (var connection in lobby.playersConnection) {
+        print("Connection: $connection");
         if (!equalSockets(connection, socket)) {
+          print("Destroying connection");
           connection.destroy();
         }
       }
@@ -361,6 +363,7 @@ class GameServer {
       onlinePlayerData.removeWhere((key, value) =>
           key == "${socket.remoteAddress.address}:${socket.remotePort}");
       if (theLobby.playersList.isEmpty) {
+        print("sala vazia");
         closeLobby(theLobby.name, socket);
         return;
       }
