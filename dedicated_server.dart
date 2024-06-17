@@ -51,6 +51,7 @@ class GameServer {
       },
       onDone: () {
         _handleDisconnect(socket);
+        print("TEsTE");
       },
       onError: (error) {
         print('Erro: $error');
