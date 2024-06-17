@@ -370,6 +370,7 @@ class GameServer {
         return;
       }
     }
+    print("Destruindo socket");
     socket.destroy();
     if (debug) print("DISCONNECTED");
   }
