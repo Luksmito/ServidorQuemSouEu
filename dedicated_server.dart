@@ -35,9 +35,9 @@ class GameServer {
 
     print(
         'Servidor seguro rodando em ${server.address.address}:${server.port}');
-    server.listen((socket) {
-      _handleConnection(socket);
-    });
+    await for (var client in server) {
+      _handleConnection(client);
+    }
   }
 
   void _handleConnection(SecureSocket socket) {
@@ -48,7 +48,12 @@ class GameServer {
         final message = utf8.decode(data);
         _handleMessage(socket, message);
       },
-      
+      onDone: () {
+        _handleDisconnect(socket);
+      },
+      onError: (error) {
+        print('Erro: $error');
+      },
     );
   }
 
@@ -350,8 +355,8 @@ class GameServer {
           return found;
         });
 
-        lobby.playersConnection
-            .removeWhere((conexao) => equalSockets(conexao, socket));
+        lobby.playersConnection.removeWhere((conexao) =>
+            equalSockets(conexao, socket));
 
         return lobby;
       });
