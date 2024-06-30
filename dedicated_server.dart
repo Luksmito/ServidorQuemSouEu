@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -17,6 +18,8 @@ class GameServer {
   Map<String, Lobby> rooms = {};
   int id = 0;
   Map<String, OnlinePlayerData> onlinePlayerData = {};
+  final Duration heartbeatInterval = Duration(seconds: 5);
+  final Duration heartbeatTimeout = Duration(seconds: 15);
 
   GameServer(this.port);
 
@@ -31,10 +34,10 @@ class GameServer {
       55656,
       context,
     );
-    
+
     print(
         'Servidor seguro rodando em ${server.address.address}:${server.port}');
-
+    Timer.periodic(heartbeatInterval, (timer) => _checkHeartbeats());
     await for (var client in server) {
       _handleConnection(client);
     }
@@ -46,7 +49,11 @@ class GameServer {
     socket.listen(
       (List<int> data) {
         final message = utf8.decode(data);
-        _handleMessage(socket, message);
+        if (message == "heartbeat\n") {
+          _handleHeartBeat(socket);
+        } else {
+          _handleMessage(socket, message);
+        }
       },
       onDone: () {
         _handleDisconnect(socket);
@@ -57,10 +64,9 @@ class GameServer {
     );
   }
 
-  void sendPacketToAllPlayers(
-      GamePacket packet, List<SecureSocket> playersConnection) {
-    for (var connection in playersConnection) {
-      connection.write(packet);
+  void sendPacketToAllPlayers(GamePacket packet, List<Player> players) {
+    for (var player in players) {
+      player.socket.write(packet);
     }
   }
 
@@ -89,24 +95,41 @@ class GameServer {
         handleSetToGuess(packet, socket);
         break;
       case PacketType.passTurn:
-        for (var connection in rooms[packet.lobbyName]!.playersConnection) {
-          if (connection != socket) connection.write(packet);
+        for (var player in rooms[packet.lobbyName]!.playersList) {
+          if (player.socket != socket) player.socket.write(packet);
         }
         break;
       case PacketType.chatMessage:
-        for (var connection in rooms[packet.lobbyName]!.playersConnection) {
-          connection.write(packet.toString());
+        for (var player in rooms[packet.lobbyName]!.playersList) {
+          player.socket.write(packet.toString());
         }
         break;
       case PacketType.restartGame:
         handleRestartGame(packet.lobbyName!);
-        for (var connection in rooms[packet.lobbyName]!.playersConnection) {
-          connection.write(packet.toString());
+        for (var player in rooms[packet.lobbyName]!.playersList) {
+          player.socket.write(packet.toString());
         }
         break;
       default:
         break;
     }
+  }
+
+  void _handleHeartBeat(SecureSocket socket) {
+    final clientKey = _getClientKey(socket);
+    print(clientKey);
+    onlinePlayerData[clientKey]?.lastHeartBeat = DateTime.now();
+    print("Recebido heartbeat de $clientKey");
+  }
+
+  void _checkHeartbeats() {
+    final currentTime = DateTime.now();
+    onlinePlayerData.forEach((key, playerData) {
+      if (currentTime.difference(playerData.lastHeartBeat) > heartbeatTimeout) {
+        print('Cliente $key desconectado devido ao timeout');
+        _handleDisconnect(playerData.socket);
+      }
+    });
   }
 
   void handleRestartGame(String lobbyName) {
@@ -122,11 +145,15 @@ class GameServer {
 
   void retransmitPacket(
       GamePacket packet, Lobby lobby, SecureSocket socketSource) {
-    for (int i = 0; i < lobby.playersConnection.length; i++) {
-      if (socketSource != lobby.playersConnection[i]) {
-        lobby.playersConnection[i].write(packet);
+    for (int i = 0; i < lobby.playersList.length; i++) {
+      if (socketSource != lobby.playersList[i].socket) {
+        lobby.playersList[i].socket.write(packet);
       }
     }
+  }
+
+  String _getClientKey(SecureSocket socket) {
+    return '${socket.remoteAddress.address}:${socket.remotePort}';
   }
 
   void handleSetToGuess(GamePacket packet, SecureSocket socket) {
@@ -145,7 +172,7 @@ class GameServer {
             playerIP: InternetAddress("0.0.0.0"),
             type: PacketType.gameStateChange,
             newGameState: GameState.gameStarting);
-        sendPacketToAllPlayers(sendPacket, lobby.playersConnection);
+        sendPacketToAllPlayers(sendPacket, lobby.playersList);
       }
       return lobby;
     });
@@ -153,9 +180,7 @@ class GameServer {
 
   void setGameState(GamePacket packet) {
     final lobby = rooms[packet.lobbyName];
-    for (int i = 1; i < lobby!.playersConnection.length; i++) {
-      lobby.playersConnection[i].write(packet);
-    }
+    sendPacketToAllPlayers(packet, lobby!.playersList);
     if (packet.newGameState == GameState.waitingPlayerChooseToGuess) {
       setPlayerOrder(packet.playerOrder!, packet.lobbyName!);
     }
@@ -193,7 +218,7 @@ class GameServer {
       if (debug) print("Erro ao criar lobby:\n $packet");
     } else {
       Lobby lobby = Lobby(rooms.length, packet.lobbyName!, packet.theme!,
-          packet.password != null, GameState.waitingPlayers, [], [],
+          packet.password != null, GameState.waitingPlayers, [],
           password: packet.password);
       rooms.addAll({"${packet.lobbyName}": lobby});
       response = "SUCCESS";
@@ -243,20 +268,15 @@ class GameServer {
           lobby.playersList.length,
           (index) => {"nick": lobby.playersList[index].nick, "ip": "0.0.0.0"});
       lobby.playersList.add(packet.fromHost
-          ? Host(packet.playerNick, socket.remoteAddress, socket.remotePort)
-          : Player(packet.playerNick, socket.remoteAddress, socket.remotePort));
+          ? Host(packet.playerNick, socket)
+          : Player(packet.playerNick, socket));
       onlinePlayerData.addAll({
         "${socket.remoteAddress.address}:${socket.remotePort}":
-            OnlinePlayerData(lobby.name, packet.fromHost)
+            OnlinePlayerData(
+                lobby.name, packet.fromHost, DateTime.now(), socket)
       });
       responsePacket.response = "SUCCESS";
-      for (var player in lobby.playersList) {
-        print("Nicks: ${player.nick}");
-      }
-      for (var connection in lobby.playersConnection) {
-        connection.write(packet);
-      }
-      lobby.playersConnection.add(socket);
+      sendPacketToAllPlayers(packet, lobby.playersList);
     } else {
       responsePacket.response = "ERROR;Erro ao se conectar";
     }
@@ -270,16 +290,6 @@ class GameServer {
     print("Players: ");
     for (var player in lobby.playersList) {
       print("Nome: ${player.nick}\n");
-      print("Endereço: ${player.myIP}");
-    }
-    print("------------------------");
-    print("Conexoes: \n");
-    for (final conexao in lobby.playersConnection) {
-      if (conexao != null) {
-        print("Endereço: ${conexao.remoteAddress.address}");
-      } else {
-        print("Nulo");
-      }
     }
     print("#######################");
   }
@@ -301,9 +311,7 @@ class GameServer {
           type: PacketType.playerDisconnect,
           playerIP: InternetAddress('0.0.0.0'));
     }
-    for (var socket in lobby.playersConnection) {
-      socket.write(packet.toString());
-    }
+    sendPacketToAllPlayers(packet, lobby.playersList);
     print("callback sended");
   }
 
@@ -322,10 +330,12 @@ class GameServer {
 
   void _handleDisconnect(SecureSocket socket) {
     print('Online players: $onlinePlayerData');
-    OnlinePlayerData? playerData = onlinePlayerData[
-        "${socket.remoteAddress.address}:${socket.remotePort}"];
+
+    String clientKey = _getClientKey(socket);
+    OnlinePlayerData? playerData = onlinePlayerData[clientKey];
     bool playerHost = false;
     Lobby theLobby;
+
     if (playerData != null) {
       if (!rooms.containsKey(playerData.lobbyName)) {
         socket.close();
@@ -335,9 +345,8 @@ class GameServer {
       theLobby = rooms.update(playerData.lobbyName, (lobby) {
         lobby.playersList.removeWhere((player) {
           print(
-              "${player.nick}\nplayer Address: ${player.myIP.address}\nsocket Address: ${socket.remoteAddress.address}\nsocket port: ${socket.remotePort}\nplayer port: ${player.port}\n");
-          final found = player.myIP.address == socket.remoteAddress.address &&
-              socket.remotePort == player.port;
+              "${player.nick}\nplayer Address: ${player.socket.remoteAddress.address}\nsocket Address: ${socket.remoteAddress.address}\nsocket port: ${socket.remotePort}\nplayer port: ${player.socket.remotePort}\n");
+          final found = socket == player.socket;
           if (found) {
             playerNick = player.nick;
             playerHost = player.isHost;
@@ -346,15 +355,12 @@ class GameServer {
 
           return found;
         });
-
-        lobby.playersConnection.removeWhere((conexao) =>
-            equalSockets(conexao, socket));
-
         return lobby;
       });
+
       sendCallbackPlayerDisconnected(theLobby, playerNick, playerHost);
-      onlinePlayerData.removeWhere((key, value) =>
-          key == "${socket.remoteAddress.address}:${socket.remotePort}");
+      onlinePlayerData.removeWhere((key, value) => key == clientKey);
+
       if (theLobby.playersList.isEmpty) {
         print("sala vazia");
         closeLobby(theLobby.name, socket);

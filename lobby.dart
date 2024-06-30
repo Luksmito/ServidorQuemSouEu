@@ -9,11 +9,10 @@ class Lobby {
   final String theme;
   final bool hasPassword;
   GameState gameState;
-  List<SecureSocket> playersConnection;
   List<Player> playersList;
   String? password;
   
-  Lobby(this.id, this.name, this.theme, this.hasPassword, this.gameState, this.playersConnection, this.playersList, {this.password}) {
+  Lobby(this.id, this.name, this.theme, this.hasPassword, this.gameState, this.playersList, {this.password}) {
     
   }
 }
