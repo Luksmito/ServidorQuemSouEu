@@ -56,7 +56,6 @@ class GameServer {
         }
       },
       onDone: () {
-        _handleDisconnect(socket);
       },
       onError: (error) {
         print('Erro: $error');
@@ -124,12 +123,16 @@ class GameServer {
 
   void _checkHeartbeats() {
     final currentTime = DateTime.now();
+    final socketsToDisconnect = [];
     onlinePlayerData.forEach((key, playerData) {
       if (currentTime.difference(playerData.lastHeartBeat) > heartbeatTimeout) {
         print('Cliente $key desconectado devido ao timeout');
-        _handleDisconnect(playerData.socket);
+        socketsToDisconnect.add(playerData.socket);
       }
     });
+    for (var socket in socketsToDisconnect) {
+      _handleDisconnect(socket);
+    }
   }
 
   void handleRestartGame(String lobbyName) {
@@ -263,7 +266,8 @@ class GameServer {
         playerNick: "HOSTSERVER",
         type: PacketType.sendPlayersAlreadyInLobby,
         playerIP: InternetAddress.anyIPv4);
-    if (lobby != null) {
+    if (lobby != null && !packet.fromHost) {
+      sendPacketToAllPlayers(packet, lobby.playersList);
       responsePacket.playersAlreadyInLobby = List<Map<String, String>>.generate(
           lobby.playersList.length,
           (index) => {"nick": lobby.playersList[index].nick, "ip": "0.0.0.0"});
@@ -276,7 +280,6 @@ class GameServer {
                 lobby.name, packet.fromHost, DateTime.now(), socket)
       });
       responsePacket.response = "SUCCESS";
-      sendPacketToAllPlayers(packet, lobby.playersList);
     } else {
       responsePacket.response = "ERROR;Erro ao se conectar";
     }
